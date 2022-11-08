@@ -1,11 +1,13 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { compare } from 'bcrypt';
 import { Repository } from 'typeorm';
 import { sign } from 'jsonwebtoken';
 import { CreateUserDto } from './dto/createUser.dto';
 import { UserEntity } from './user.entity';
 import { JWT_SECRET } from '@app/config';
 import { UserResponseInterface } from './types/userResponse.interface';
+import { LoginUserDto } from './dto/loginUser.dto';
 
 @Injectable()
 export class UserService {
@@ -14,15 +16,15 @@ export class UserService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async createUser(createuserDto: CreateUserDto): Promise<UserEntity> {
+  async createUser(createUserDto: CreateUserDto): Promise<UserEntity> {
     const userbyEmail = await this.userRepository.findOne({
       where: {
-        email: createuserDto.email,
+        email: createUserDto.email,
       },
     });
     const userbyUsername = await this.userRepository.findOne({
       where: {
-        username: createuserDto.username,
+        username: createUserDto.username,
       },
     });
 
@@ -33,8 +35,40 @@ export class UserService {
       );
     }
     const newUser = new UserEntity();
-    Object.assign(newUser, createuserDto);
+    Object.assign(newUser, createUserDto);
     return await this.userRepository.save(newUser);
+  }
+
+  async login(loginUserDto: LoginUserDto): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({
+      where: {
+        email: loginUserDto.email,
+      },
+      select: ['id', 'username', 'bio', 'email', 'image', 'password'],
+    });
+
+    if (!user) {
+      throw new HttpException(
+        'Credentials are not valid',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    const isPasswordCorrect = await compare(
+      loginUserDto.password,
+      user.password,
+    );
+
+    if (!isPasswordCorrect) {
+      throw new HttpException(
+        'Credentials are not valid',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
+
+    delete user.password;
+
+    return user;
   }
 
   generateJwt(user: UserEntity): string {
