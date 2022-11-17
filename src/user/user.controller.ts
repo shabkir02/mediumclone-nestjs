@@ -1,16 +1,13 @@
-import { ExpressRequestInterface } from '@app/types/expressRequest.interface';
 import {
   Body,
   Controller,
   Get,
   Post,
   Put,
-  Req,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { User } from './decorators/user.decorator';
 import { CreateUserDto } from './dto/createUser.dto';
 import { LoginUserDto } from './dto/loginUser.dto';
