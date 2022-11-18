@@ -37,6 +37,9 @@ export class UserService {
     }
     const newUser = new UserEntity();
     Object.assign(newUser, createUserDto);
+
+    delete newUser.password;
+
     return await this.userRepository.save(newUser);
   }
 
