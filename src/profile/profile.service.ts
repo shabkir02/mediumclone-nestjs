@@ -29,9 +29,16 @@ export class ProfileService {
       throw new HttpException('Profile does not exist', HttpStatus.NOT_FOUND);
     }
 
+    const follow = await this.followRepository.findOne({
+      where: {
+        followerId: currentUserId,
+        followingId: user.id,
+      },
+    });
+
     return {
       ...user,
-      following: false,
+      following: Boolean(follow),
     };
   }
 
@@ -73,6 +80,38 @@ export class ProfileService {
     return {
       ...user,
       following: true,
+    };
+  }
+
+  async unFollowProfile(
+    currentUserId: number,
+    profileUsername: string,
+  ): Promise<ProfileType> {
+    const user = await this.userRepository.findOne({
+      where: {
+        username: profileUsername,
+      },
+    });
+
+    if (!user) {
+      throw new HttpException('Profile does not exist', HttpStatus.NOT_FOUND);
+    }
+
+    if (currentUserId === user.id) {
+      throw new HttpException(
+        'Follower and following cant be equal',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.followRepository.delete({
+      followerId: currentUserId,
+      followingId: user.id,
+    });
+
+    return {
+      ...user,
+      following: false,
     };
   }
 
